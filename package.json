@@ -1,0 +1,16 @@
+{
+  "name": "moviz",
+  "version": "0.0.1",
+  "description": "local movies library",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "ovaxio",
+  "license": "ISC",
+  "devDependencies": {
+    "gulp-load-plugins": "^1.0.0-rc.1",
+    "gulp-server-livereload": "^1.5.3",
+    "phantomjs": "^1.9.18"
+  }
+}
