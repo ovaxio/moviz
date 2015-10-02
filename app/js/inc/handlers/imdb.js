@@ -1,24 +1,30 @@
-"use strict"
-exports.process = function () {
-  return this.evaluate(function() {
-    var results, list;
-    list = $('.findResult');
-    results = [];
+;(function() {
+  "use strict"
 
-    list.each(function (id) {
-      var el, text;
+  module.exports = {
+    process : function () {
+      // 'this' is an instance of PhantomJS' WebPage as returned by require("webpage").create()
+      return this.evaluate(function() {
+        var results, list;
+        list = $('.findResult');
+        results = [];
 
-      el = $(this);
-      text = el.find('.result_text');
+        list.each(function (id) {
+          var el, text;
 
-      results[id] = {
-        'title' : text.text(),
-        'link'  : text.children('a').attr('href'),
-        'image' : el.find('.primary_photo img').attr('src')
-      };
-    });
+          el = $(this);
+          text = el.find('.result_text');
 
-    return results;
-  });
-}
+          results[id] = {
+            'title' : text.text(),
+            'link'  : text.children('a').attr('href'),
+            'image' : el.find('.primary_photo img').attr('src')
+          };
+        });
 
+        return results;
+      });
+    }
+  }//exports
+
+})();

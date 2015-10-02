@@ -1,12 +1,17 @@
 var phridge = require('phridge'),
     Imdb = require('./inc/handlers/imdb.js'),
-    query;
+    GLOBALS = require('./inc/vars.js'),
+    query, website, pattern, url;
 
-query = 'independance day';
+query = 'i am a legend';
+website = 'imdb';
+
+url = GLOBALS.websites[website] || false;
+url = url.replace(GLOBALS.config.pattern, encodeURIComponent(query));
 
 phridge.spawn()
   .then(function (phantom) {
-    return phantom.openPage("http://www.imdb.com/find?ref_=nv_sr_fn&q="+query+"&s=all");
+    return phantom.openPage(url);
   })
   .then(function (page) {
     return page.run(Imdb.process);
