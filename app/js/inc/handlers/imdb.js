@@ -17,7 +17,7 @@
 
           results[id] = {
             'title' : text.text(),
-            'link'  : text.children('a').attr('href'),
+            'link'  : window.location.origin + text.children('a').attr('href'),
             'image' : el.find('.primary_photo img').attr('src')
           };
         });
