@@ -1,19 +1,86 @@
 ;(function() {
   "use strict"
   var promise = require('bluebird'),
-      fs      = promise.promisifyAll(require('fs'));
+  fs          = promise.promisifyAll(require('fs')),
+  babyparse   = require('babyparse'),
+  patterns    = {
+    year      : /(19\d{2}|200\d|201\d)/,
+    quality   : /(1080p|720p|480p|4k)/i,
+    extra     : /(\[.*\]|\(.*\))/gi,
+    trim      : /(\W)+/gi,
+    space     : /[^\w\n ]+/gi,
+    extension : /\.([\w\d]+)$/
+  };
+
+  var lib = {
+    getYear : function (movie) {
+      var matches = movie.match(patterns.year);
+      if (null == matches) {
+        return '';
+      }
+      return matches[1];
+    },
+
+    getExtension : function (movie) {
+      var matches = movie.match(patterns.extension);
+      if (null == matches) {
+        return '';
+      }
+      return matches[1];
+    },
+
+    getTitle : function (movie) {
+      movie = movie.replace(/(19\d{2}|200\d|201\d).*/, '');
+      movie = movie.replace(patterns.quality, '');
+      movie = movie.replace(patterns.extra, '');
+      movie = movie.replace(patterns.trim, '$1');
+      movie = movie.replace(patterns.space, ' ');
+      return movie.trim();
+    },
+    getExtra : function (movie) {
+      movie = movie.replace(this.getTitle(movie), '');
+      movie = movie.replace(patterns.year, '');
+      movie = movie.replace(patterns.quality, '');
+      movie = movie.replace(patterns.trim, '$1');
+      movie = movie.replace(patterns.space, ' ');
+      return movie.trim();
+    },
+    getQuality : function (movie) {
+      var matches = movie.match(patterns.quality);
+      if (null == matches) {
+        return '';
+      }
+      return matches[1];
+    }
+  };
 
   module.exports = {
-    clean : function () {
-      return fs.readFileAsync('./app/assets/movies.csv', 'utf8')
+    parseCSV : function (filename) {
+      return fs.readFileAsync(filename, 'utf8')
       .then(function (data) {
-         // data = data.replace(/(\d{3,4}p|.mp4|.avi|.mkv|blueray|bluray|dvdrip|brrip|4k|\dcd|[xh]\d{3}|aac|dts|web|dd5|hd|3d|xvid|etrg|rarbg|yify|jyk|hevc|ddr|extended|remux|avc|mafiaking|m2tv|mp3)/gi, '');
-         data = data.replace(/(19\d{2}|200\d|201\d).*/gi, ''); // all the things after the year
-         data = data.replace(/(1080p|720p|4k).*/gi, ''); //all the thing after 720p / 1080p / 4k
-         data = data.replace(/(\[.*\]|\(.*\))/gi, ''); // all the things between [] or ()
-         data = data.replace(/(\W)+/gi, '$1'); // deduplicate the non word char
-         data = data.replace(/[^\w\n ]+/gi, ' '); // transform all the non word char ( except \n and space) into space
-         return data;
+        var results = [];
+        var save = data;
+
+        data = babyparse.parse(data, {
+          delimiter: ';',
+          encoding: 'utf8',
+          step: function(data, parser) {
+            var rawData = data.data[0][0];
+            var movie = {
+              title : lib.getTitle(rawData),
+              query : null,
+              year  : lib.getYear(rawData),
+              quality  : lib.getQuality(rawData),
+              extra : lib.getExtra(rawData),
+              raw   : rawData,
+              extension : lib.getExtension(rawData)
+            };
+
+            movie.query = movie.title + ' ' + movie.year;
+            results.push(movie);
+          }
+        });
+         return results;
       });
     }
   }//exports

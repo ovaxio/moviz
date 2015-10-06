@@ -4,18 +4,23 @@ handlers    = require('./inc/handlers/index.js'),
 GLOBALS     = require('./inc/vars.js'),
 moviez      = require('./lib.js'),
 fs          = promise.promisifyAll(require('fs')),
-query       = ['i am a legend', 'big hero 6'],
+query       = null,
 website     = 'imdb',
 resultPath  = './data',
-results     = {},
-page        = null,
-phantom     = null;
+phantom     = null,
+babyparse   = require('babyparse');
 
-var babyparse = require('babyparse');
+// initialize json with a list of movies
+// var moviezP = moviez.parseCSV('./app/assets/movies.csv')
+// .then(function (jsonData) {
+//   saveResult(jsonData);
+//   return jsonData;
+// });
 
-moviez.clean()
+
+fs.readFileAsync('./data/results.json', 'utf8')
 .then(function (data) {
-  query = babyparse.parse(data).data;
+  query = JSON.parse(data);
   return phridge.spawn()
 })
 .then(function (p) {
@@ -24,19 +29,18 @@ moviez.clean()
 })
 .then(function (result) {
   if (result) {
-    console.log(query[query.length-1])
-    results[query[query.length-1]] = result;
+    query[query.length-1].results = result;
   }
 })
 .finally(phridge.disposeAll) // close all phantomjs processes
 .done(function () {
-  saveResult(results);
+  saveResult(query);
 }, function (err) {
   throw err;
 });
 
 // functions
-function saveResult(results) {
+function saveResult(data) {
   fs.mkdirAsync(resultPath).catch(function (err) {
     if (err.code === 'EEXIST') {
       return true;
@@ -45,7 +49,7 @@ function saveResult(results) {
   })
   .then(function () {
     console.log('Save results...');
-    return fs.writeFileAsync(resultPath + '/results.json', JSON.stringify(results));
+    return fs.writeFileAsync(resultPath + '/results.json', JSON.stringify(data));
   })
   .then(function () {
     console.log('Results is saved in ' + resultPath + '/results.json !');
@@ -55,21 +59,28 @@ function saveResult(results) {
   });
 }
 
-function fetchMovies(query) {
-  return query.reduce(function (promise, q, idx) {// promise = valeur precedente, q = valeur courante
+function fetchMovies(data) {
+  return data.reduce(function (promise, q, idx) {// promise = valeur precedente, q = valeur courante
     return promise.then(function (result) {
-      var tmp = GLOBALS.websites[website];
-      if (idx > 0) {
-        console.log(query[idx-1])
-        results[query[idx-1]] = result;
+      var searchUrl = GLOBALS.websites[website],
+          line      = data[0];
+
+      if (idx > 0) { // first loop finished
+        line = data[idx];
+        query[idx-1].results = result;
       }
 
-      url = tmp.replace(GLOBALS.config.pattern, encodeURIComponent(q));
+      if (line.results && line.results != null) {
+        return line.results;
+      }
 
-      return phantom.openPage(url)
+      title     = line.title;
+      searchUrl = searchUrl.replace(GLOBALS.config.pattern, encodeURIComponent(q.query));
+
+      return phantom.openPage(searchUrl)
         .then(function (page) {
-          console.log(url);
-          return page.run(handlers[website].process); // page.evaluate
+          console.log(title, searchUrl);
+          return page.run(title, handlers[website].process); // page.evaluate
         });
     });
   }, promise.resolve());
