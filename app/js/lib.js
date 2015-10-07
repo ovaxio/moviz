@@ -10,7 +10,9 @@
     trim      : /(\W)+/gi,
     space     : /[^\w\n ]+/gi,
     extension : /\.([\w\d]+)$/
-  };
+  },
+  resultPath  = './data',
+  resultFile  = resultPath + '/results.json';
 
   var lib = {
     getYear : function (movie) {
@@ -20,7 +22,6 @@
       }
       return matches[1];
     },
-
     getExtension : function (movie) {
       var matches = movie.match(patterns.extension);
       if (null == matches) {
@@ -28,7 +29,6 @@
       }
       return matches[1];
     },
-
     getTitle : function (movie) {
       movie = movie.replace(/(19\d{2}|200\d|201\d).*/, '');
       movie = movie.replace(patterns.quality, '');
@@ -55,7 +55,7 @@
   };
 
   module.exports = {
-    parseCSV : function (filename) {
+    parseCSV: function (filename) {
       return fs.readFileAsync(filename, 'utf8')
       .then(function (data) {
         var results = [];
@@ -82,6 +82,40 @@
         });
          return results;
       });
+    },
+
+    saveFile: function (data) {
+      fs.mkdirAsync(resultPath).catch(function (err) {
+        if (err.code === 'EEXIST') {
+          return true;
+        }
+        throw err;
+      })
+      .then(function () {
+        console.log('Save results...');
+        return fs.writeFileAsync(resultFile, JSON.stringify(data));
+      })
+      .then(function () {
+        console.log('Results is saved in ' + resultFile + ' !');
+      })
+      .catch(function(err) {
+          throw err
+      });
+    },
+
+    search: function (data, context, cb) {
+      if ('undefined' === typeof cb) {
+        cb = context;
+        context = null;
+      }
+      return data.reduce(function (prev, current, index) { // first time prev = promise.resolve() (see line 118)
+        return prev.then(cb.bind(this, {
+          list        : data,
+          current     : current,
+          index       : index,
+          context     : context
+        }));
+      }, promise.resolve());
     }
   }//exports
 
