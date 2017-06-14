@@ -11,11 +11,11 @@
   "devDependencies": {
     "gulp-load-plugins": "^1.0.0-rc.1",
     "gulp-server-livereload": "^1.5.3",
-    "phantomjs": "^1.9.18"
+    "phantomjs": "^2.1.7"
   },
   "dependencies": {
     "babyparse": "^0.4.3",
-    "bluebird": "^2.10.2",
-    "phridge": "^1.1.0"
+    "bluebird": "^3.5.0",
+    "phridge": "^2.0.0"
   }
 }
